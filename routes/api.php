@@ -39,6 +39,8 @@ Route::post('userregister', [UserController::class, 'register']);
 
 Route::post('verify-otp', [UserController::class, 'verifyOtp']);
 
+Route::post('user-login', [UserController::class, 'login']);
+
 Route::get('user/{username}/pdf', [UserController::class, 'generateUserDetailsPdf']);
 
 

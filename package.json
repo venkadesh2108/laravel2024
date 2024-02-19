@@ -1,13 +1,28 @@
 {
-    "private": true,
-    "type": "module",
+    "name": "vite",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
     "scripts": {
-        "dev": "vite",
-        "build": "vite build"
+      "test": "echo \"Error: no test specified\" && exit 1",
+      "build": "vite build",
+      "dev": "vite --mode development"
     },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
     "devDependencies": {
-        "axios": "^1.6.1",
-        "laravel-vite-plugin": "^1.0.0",
-        "vite": "^5.0.0"
+      "@vitejs/plugin-vue": "^4.4.0",
+      "autoprefixer": "^10.4.16",
+      "laravel-vite-plugin": "^0.8.1",
+      "postcss": "^8.4.31",
+      "tailwindcss": "^3.3.5",
+      "vite": "^4.5.0"
+    },
+    "dependencies": {
+      "@headlessui/vue": "^1.7.16",
+      "@heroicons/vue": "^2.0.18",
+      "@inertiajs/vue3": "^1.0.14",
+      "vue": "^3.2.36"
     }
-}
+  }

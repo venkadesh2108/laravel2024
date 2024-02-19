@@ -18,10 +18,12 @@ class UserController extends Controller
         $request->validate([
             'username' => 'required|regex:/^[a-zA-Z0-9_]+$/',
             'email' => 'required|email',
+            'password' => 'required'
         ]);
 
         $userProvidedUsername = $request->input('username');
         $userProvidedEmail = $request->input('email');
+        $userProvidedpassword = $request->input('password');
 
         $otp = mt_rand(100000, 999999);
 
@@ -29,36 +31,42 @@ class UserController extends Controller
 
         try {
 
-            DB::connection('mysql')->statement("CREATE DATABASE IF NOT EXISTS $dbname");
+            $databaseExists = DB::connection('mysql')->select("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$dbname'");
 
+            if (!empty($databaseExists)) {
+
+                return response()->json(['error' => 'Database already exists'], 400);
+            }
+
+
+            DB::connection('mysql')->statement("CREATE DATABASE IF NOT EXISTS $dbname");
 
             config(['database.connections.mysql.database' => $dbname]);
             DB::reconnect();
 
-
             DB::statement('
-                CREATE TABLE IF NOT EXISTS users (
-                    id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                    username VARCHAR(30) NOT NULL,
-                    email VARCHAR(50),
-                    password VARCHAR(255) NOT NULL,
-                    otp VARCHAR(10) NOT NULL,
-                    verified_at TIMESTAMP NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                )
-            ');
+            CREATE TABLE IF NOT EXISTS users (
+                id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(30) NOT NULL,
+                email VARCHAR(50),
+                password VARCHAR(255) NOT NULL,
+                otp VARCHAR(10) NOT NULL,
+                verified_at TIMESTAMP NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        ');
 
 
-            $hashedPassword = bcrypt("your_default_password");
+        $hashedPassword = bcrypt("your_default_password");
 
 
-            DB::table('users')->insert([
-                'username' => $userProvidedUsername,
-                'email' => $userProvidedEmail,
-                'password' => $hashedPassword,
-                'otp' => $otp,
-            ]);
+        DB::table('users')->insert([
+            'username' => $userProvidedUsername,
+            'email' => $userProvidedEmail,
+            'password' => $hashedPassword,
+            'otp' => $otp,
+        ]);
 
 
             config(['database.connections.mysql.database' => config('database.default')]);
@@ -71,8 +79,8 @@ class UserController extends Controller
 
             Mail::raw($message, function($mail) use ($to, $fromEmail, $subject) {
                 $mail->from($fromEmail)
-                     ->to($to)
-                     ->subject($subject);
+                    ->to($to)
+                    ->subject($subject);
             });
 
             return response()->json(['message' => 'Registration successful'], 200);
@@ -109,6 +117,41 @@ class UserController extends Controller
             return response()->json(['message' => 'OTP verification successful'], 200);
         } else {
             return response()->json(['message' => 'Invalid OTP'], 422);
+        }
+    }
+
+    public function login(Request $request)
+    {
+        $request->validate([
+            'username' => 'required',
+            'password' => 'required',
+        ]);
+
+        $username = $request->input('username');
+        $password = $request->input('password');
+
+        try {
+
+            $dbname = $username;
+            config(['database.connections.mysql.database' => $dbname]);
+            DB::reconnect();
+
+
+            $user = DB::table('users')->where('username', $username)->first();
+
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+
+            if (!Hash::check($password, $user->password)) {
+                return response()->json(['error' => 'Invalid password'], 401);
+            }
+
+
+            return response()->json(['message' => 'Login successful', 'user' => $user], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
